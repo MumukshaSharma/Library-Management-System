@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { LibrarySidebar } from "@/components/LibrarySidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -6,27 +5,30 @@ import { StudentDashboard } from "@/components/StudentDashboard";
 import { LibrarianDashboard } from "@/components/LibrarianDashboard";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { LoginForm } from "@/components/LoginForm";
+import { useAuth } from "@/hooks/useAuth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
-  const [user, setUser] = useState<{
-    role: 'student' | 'librarian' | 'admin';
-    name: string;
-  } | null>(null);
+  const { user, userRole, loading } = useAuth();
 
-  const handleLogin = (role: 'student' | 'librarian' | 'admin', name: string) => {
-    setUser({ role, name });
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="space-y-4 w-80">
+          <Skeleton className="h-16 w-16 rounded-full mx-auto" />
+          <Skeleton className="h-4 w-3/4 mx-auto" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+    );
+  }
 
-  const handleLogout = () => {
-    setUser(null);
-  };
-
-  if (!user) {
-    return <LoginForm onLogin={handleLogin} />;
+  if (!user || !userRole) {
+    return <LoginForm />;
   }
 
   const renderDashboard = () => {
-    switch (user.role) {
+    switch (userRole) {
       case 'student':
         return <StudentDashboard />;
       case 'librarian':
@@ -38,12 +40,14 @@ const Index = () => {
     }
   };
 
+  const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+
   return (
     <SidebarProvider defaultOpen>
       <div className="min-h-screen flex w-full bg-background">
-        <LibrarySidebar userRole={user.role} />
+        <LibrarySidebar userRole={userRole} />
         <SidebarInset className="flex flex-col">
-          <DashboardHeader userRole={user.role} userName={user.name} />
+          <DashboardHeader userRole={userRole} userName={userName} />
           <main className="flex-1 overflow-auto">
             {renderDashboard()}
           </main>

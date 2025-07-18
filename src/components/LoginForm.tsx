@@ -5,59 +5,44 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 
-interface LoginFormProps {
-  onLogin: (role: 'student' | 'librarian' | 'admin', name: string) => void;
-}
-
-export function LoginForm({ onLogin }: LoginFormProps) {
+export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'student' | 'librarian' | 'admin'>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { signIn, signUp } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock authentication - in real app this would validate with Supabase
-    const mockName = email.split('@')[0] || 'User';
-    onLogin(selectedRole, mockName.charAt(0).toUpperCase() + mockName.slice(1));
+    setLoading(true);
+    
+    const { error } = await signIn(email, password);
+    
+    if (!error) {
+      // Success handled by auth context
+    }
+    
+    setLoading(false);
   };
 
-  const getRoleInfo = (role: string) => {
-    switch (role) {
-      case 'student':
-        return {
-          icon: BookOpen,
-          color: 'bg-success/20 text-success border-success/30',
-          description: 'Browse and borrow books'
-        };
-      case 'librarian':
-        return {
-          icon: Users,
-          color: 'bg-warning/20 text-warning border-warning/30',
-          description: 'Manage inventory and users'
-        };
-      case 'admin':
-        return {
-          icon: Shield,
-          color: 'bg-destructive/20 text-destructive border-destructive/30',
-          description: 'Full system access'
-        };
-      default:
-        return {
-          icon: BookOpen,
-          color: 'bg-muted/20 text-muted-foreground border-muted/30',
-          description: ''
-        };
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const { error } = await signUp(email, password, fullName);
+    
+    if (!error) {
+      // Success handled by auth context
     }
+    
+    setLoading(false);
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -73,113 +58,138 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           </div>
         </div>
 
-        {/* Login Form */}
+        {/* Login/Signup Form */}
         <Card className="border-border/50 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-center">Sign In</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Role Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="role">Select Role</Label>
-                <Select value={selectedRole} onValueChange={(value: 'student' | 'librarian' | 'admin') => setSelectedRole(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose your role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        Student
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="librarian">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Librarian
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="admin">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Administrator
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {/* Role Info Badge */}
-                <div className="mt-2">
-                  {(() => {
-                    const roleInfo = getRoleInfo(selectedRole);
-                    const IconComponent = roleInfo.icon;
-                    return (
-                      <Badge variant="outline" className={roleInfo.color}>
-                        <IconComponent className="h-3 w-3 mr-1" />
-                        {roleInfo.description}
-                      </Badge>
-                    );
-                  })()}
-                </div>
-              </div>
+          <CardContent className="p-0">
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="signin" className="space-y-4 p-6">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
 
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
 
-              {/* Password */}
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Signing In..." : "Sign In"}
                   </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="signup" className="space-y-4 p-6">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create a password (min 6 characters)"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        minLength={6}
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Creating Account..." : "Create Account"}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+
+            {/* Info */}
+            <div className="p-6 pt-0">
+              <div className="p-4 bg-muted/30 rounded-lg">
+                <p className="text-sm text-muted-foreground text-center mb-2">
+                  Role Assignment:
+                </p>
+                <div className="text-xs space-y-1 text-muted-foreground">
+                  <p><strong>New users:</strong> Automatically assigned Student role</p>
+                  <p><strong>Role upgrades:</strong> Contact admin for Librarian/Admin access</p>
                 </div>
-              </div>
-
-              {/* Submit Button */}
-              <Button type="submit" className="w-full">
-                Sign In as {selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}
-              </Button>
-            </form>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-              <p className="text-sm text-muted-foreground text-center mb-2">
-                Demo Credentials (any email/password works):
-              </p>
-              <div className="text-xs space-y-1 text-muted-foreground">
-                <p><strong>Student:</strong> Browse books, track due dates</p>
-                <p><strong>Librarian:</strong> Manage inventory, handle returns</p>
-                <p><strong>Admin:</strong> Full system management</p>
               </div>
             </div>
           </CardContent>

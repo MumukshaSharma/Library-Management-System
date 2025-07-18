@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardHeaderProps {
   userRole: 'student' | 'librarian' | 'admin';
@@ -17,8 +18,14 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ userRole, userName }: DashboardHeaderProps) {
+  const { signOut } = useAuth();
+  
   // Mock notification count
   const notificationCount = userRole === 'student' ? 3 : userRole === 'librarian' ? 7 : 12;
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   return (
     <header className="h-16 border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
@@ -78,7 +85,10 @@ export function DashboardHeader({ userRole, userName }: DashboardHeaderProps) {
                 Notifications
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem 
+                className="text-destructive"
+                onClick={handleLogout}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>
